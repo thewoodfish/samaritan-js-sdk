@@ -1,0 +1,29 @@
+{
+  "name": "samaritan-js-sdk",
+  "version": "0.0.2",
+  "description": "This JS library serves as an interface to SamaritanOS for web applications.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thewoodfish/samaritan-js-sdk.git"
+  },
+  "keywords": [
+    "web3",
+    "polkadot",
+    "kilt",
+    "blockchain",
+    "decentralization",
+    "samaritan",
+    "substrate"
+  ],
+  "author": "@thewoodfish",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/thewoodfish/samaritan-js-sdk/issues"
+  },
+  "homepage": "https://github.com/thewoodfish/samaritan-js-sdk#readme"
+}

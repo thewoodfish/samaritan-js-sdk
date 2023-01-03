@@ -25,5 +25,13 @@
   "bugs": {
     "url": "https://github.com/thewoodfish/samaritan-js-sdk/issues"
   },
-  "homepage": "https://github.com/thewoodfish/samaritan-js-sdk#readme"
+  "homepage": "https://github.com/thewoodfish/samaritan-js-sdk#readme",
+  "dependencies": {
+    "@polkadot/api": "^9.10.5",
+    "ws": "^8.11.0"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.7",
+    "utf-8-validate": "^5.0.10"
+  }
 }

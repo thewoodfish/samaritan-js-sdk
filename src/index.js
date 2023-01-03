@@ -1,23 +1,32 @@
 // imports
-import * as Kilt from '@kiltprotocol/sdk-js'
-import axios from 'axios'
+import util from "./utility.js";
+import kilt from "./kilt.js";
+import dbs from "./database.js";
 
 class SamaritanSDK {
     connected = false;
-    kilt_connector = {};
+
+    constructor(addr = "1509") {
+        this.db_address = addr;
+    }
 
     // initialize the library instance
     init() {
         if (!connected) {
-            let kilt_con = [];
-
-            sam.db.insert(did, {});
+            console.log("initializing...");
+        
+            (async function() {
+                if (await kilt.connect()) {
+                    if (await dbs.init(this.db_address)) 
+                        console.log("connections successfully set up.")
+                }
+            })();
         }
     }
 
-    // database connections
+    // database entry
     db = {
-        insert() {
+        insert: function() {
 
         }
     }

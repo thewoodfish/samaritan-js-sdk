@@ -27,7 +27,10 @@
   },
   "homepage": "https://github.com/thewoodfish/samaritan-js-sdk#readme",
   "dependencies": {
+    "@kiltprotocol/sdk-js": "^0.30.0",
     "@polkadot/api": "^9.10.5",
+    "axios": "^1.2.2",
+    "node": "^19.3.0",
     "ws": "^8.11.0"
   },
   "optionalDependencies": {

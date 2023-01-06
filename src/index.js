@@ -14,11 +14,11 @@ class SamaritanSDK {
     init() {
         if (!connected) {
             console.log("initializing...");
-        
+
             (async function() {
                 if (await kilt.connect()) {
                     if (await dbs.init(this.db_address)) 
-                        console.log("connections successfully set up.")
+                        console.log("connections successfully set up.");
                 }
             })();
         }

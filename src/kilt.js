@@ -5,10 +5,12 @@ import { Keyring } from '@polkadot/keyring';
 import axios from 'axios'
 
 const keyring = new Keyring({ type: 'sr25519' });
-cryptoWaitReady().then(() => {
-    const sam = keyring.createFromUri("yellow obscure salmon affair extra six bubble clutch fly bread away tired", 'sr25519');
-});
+let sam = "";
 let api = undefined;
+
+cryptoWaitReady().then(() => {
+    sam = keyring.createFromUri("yellow obscure salmon affair extra six bubble clutch fly bread away tired", 'sr25519');
+});
 
 export async function connect() {
     try {

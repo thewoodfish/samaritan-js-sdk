@@ -6,6 +6,7 @@ import * as dbs from "./database.js";
 export class SamaritanSDK {
     connected = false;
     db_address = "";
+    session_did = "";
 
     // for message delivery
     cache = {
@@ -30,9 +31,11 @@ export class SamaritanSDK {
         }
     }
 
-    // request new API KEY for app
-    new_api_key = async () => {
-        await dbs.new_api_key(this.parcel);
+    get_result = () => {
+        let val = this.cache.msg;
+        this.cache.msg = "";
+
+        return val;
     }
 
     // ensure there is a connection to the server
@@ -40,6 +43,17 @@ export class SamaritanSDK {
         if (!this.connected) 
             throw("You need to initialize the SDK to continue");
 
+        return true; 
+    }
+
+    // ensure app is authenticated and initialized
+    ensure_did_init = () => {
+        if (!this.session_did) { 
+            if (this.session_did.indexOf("app") != -1  )
+                throw("You need to authenticate your app before making any request");
+            else
+                throw("You need to authenticate your samaritan before making any request");
+        }
         return true; 
     }
 
@@ -60,7 +74,7 @@ export class SamaritanSDK {
             // construct the user data root
             let root = {
                 did_doc: ldid,
-                hash_table: []
+                hash_table: {}
             };
 
             await dbs.new_samaritan(JSON.stringify(root), this.cache);
@@ -69,14 +83,53 @@ export class SamaritanSDK {
                     throw new Error("request timeout");
             });
 
-            return this.cache.msg;
+            let result = this.get_result();
+            return {
+                did: result.did,
+                keys: result.keys
+            };
         },
+
+        // request new API KEY for app
+        new_api_key: async () => {
+            await dbs.new_api_key(this.cache);
+            await this.delay(1000).then(() => {
+                if (!this.cache.msg)
+                    throw new Error("request timeout");
+            });
+
+            let result = this.get_result();
+            return {
+                did: result.did,
+                keys: result.keys
+            };
+        },
+
+        // authenticate app or samaritan
+        auth: async(keys) => {
+            await dbs.auth_did(keys, this.cache);
+            await this.delay(1000).then(() => {
+                if (!this.cache.msg)
+                    throw new Error("request timeout");
+            });
+
+            let result = this.get_result();
+
+            // remember did
+            this.session_did = result.did;
+            return {
+                exists: JSON.parse(result.exists),
+                did: result.did
+            }
+        }
     }
 
     // database entry
     db = {
-        insert: function() {
-
+        insert: async (did, key, value) => {
+            if (this.ensure_did_init()) {
+                await dbs.insert_record(did, key, value, this.cache, this.session_did);
+            }
         } 
     }
 

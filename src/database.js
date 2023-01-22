@@ -26,21 +26,46 @@ export async function new_samaritan(did_str, cache) {
 
         ws.on('message', function message(data) {
             console.log(`recieved: ${data}`);
-            cache["msg"] = data.toString();
+            cache["msg"] = JSON.parse(data.toString());
         });
     });
 
-    // delay a bit
+    // delay a bit  
 }
 
 // request new API KEY
 // code for `new_api_key` is 2
-export async function new_api_key(parcel) {
+export async function new_api_key(cache) {
     ws.on('open', function open() {
         ws.send(`~2#`);
 
         ws.on('message', function message(data) {
             console.log(`received: ${data}`);
+            cache["msg"] = JSON.parse(data.toString());
         });
+    });
+}
+
+// authenticate app || samaritan
+// code for `auth_did` is 3
+export async function auth_did(keys, cache) {
+    ws.on('open', function open() {
+        ws.send(`~3#${keys}`);
+
+        ws.on('message', function message(data) {
+            console.log(`received: ${data}`);
+            cache["msg"] = JSON.parse(data.toString());
+        });
+    });
+}
+
+// perform insertion into database
+// code for `insert_record` is 4
+export async function insert_record(did, key, value, cache, session_did) {
+    ws.send(`~4#${did ? did : ""}#${key}#${JSON.stringify(value)}#${session_did}`);
+
+    ws.on('message', function message(data) {
+        console.log(`received: ${data}`);
+        cache["msg"] = JSON.parse(data.toString());
     });
 }

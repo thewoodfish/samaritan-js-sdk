@@ -69,3 +69,37 @@ export async function insert_record(did, key, value, cache, session_did) {
         cache["msg"] = JSON.parse(data.toString());
     });
 }
+
+
+// retreive value from database
+// code for `insert_record` is 5
+export async function get_record(did, key, cache, session_did) {
+    ws.send(`~5#${did ? did : ""}#${key}#${session_did}`);
+
+    ws.on('message', function message(data) {
+        // console.log(`received: ${data}`);
+        cache["msg"] = JSON.parse(data.toString());
+    });
+}
+
+// retreive value from database
+// code for `del_record` is 6
+export async function del_record(did, key, cache, session_did) {
+    ws.send(`~6#${did ? did : ""}#${key}#${session_did}`);
+
+    ws.on('message', function message(data) {
+        // console.log(`received: ${data}`);
+        cache["msg"] = JSON.parse(data.toString());
+    });
+}
+
+// revoke the access of an app
+// code for `del_record` is 6
+export async function revoke(did, cache, session_did) {
+    ws.send(`~7#${did}#${session_did}`);
+
+    ws.on('message', function message(data) {
+        // console.log(`received: ${data}`);
+        cache["msg"] = JSON.parse(data.toString());
+    });
+}

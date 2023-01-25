@@ -121,16 +121,57 @@ export class SamaritanSDK {
                 exists: JSON.parse(result.exists),
                 did: result.did
             }
+        },
+
+        // revoke the access of an app
+        revoke: async(did) => {
+            if (!this.session_did || this.session_did.indexOf("app") != -1 ) 
+                throw("You need to authenticate your samaritan before making any request");
+
+            await dbs.revoke(did, this.cache, this.session_did);
+            await this.delay(1000).then(() => {
+                if (!this.cache.msg)
+                    throw new Error("request timeout");
+            });
+
+            return this.get_result();
         }
     }
 
     // database entry
     db = {
+        // insert into database
         insert: async (did, key, value) => {
             if (this.ensure_did_init()) {
                 await dbs.insert_record(did, key, value, this.cache, this.session_did);
             }
-        } 
+        },
+
+        // retreive from database
+        get: async (did, key) => {
+            if (this.ensure_did_init()) {
+                await dbs.get_record(did, key, this.cache, this.session_did);
+                await this.delay(1000).then(() => {
+                    if (!this.cache.msg)
+                        throw new Error("request timeout");
+                });
+    
+                return this.get_result();
+            }
+        },
+        
+        // delete an entry in the database
+        delete: async (did, key) => {
+            if (this.ensure_did_init()) {
+                await dbs.del_record(did, key, this.cache, this.session_did);
+                await this.delay(1000).then(() => {
+                    if (!this.cache.msg)
+                        throw new Error("request timeout");
+                });
+    
+                return this.get_result();
+            }
+        },
     }
 
 }

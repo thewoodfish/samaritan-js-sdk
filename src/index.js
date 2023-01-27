@@ -63,62 +63,47 @@ export class SamaritanSDK {
 
     did = {
         // create new samaritan
-        create_new: async(name) => {
+        create_new: async (name) => {
             if (!this.ensure_connection() && !name) 
                 throw(`To create a Samaritan, you must specify a name.`);
 
-            // create a light DID from KILT
-            let ldid = await kilt.createKiltLightDID();
-            ldid["name"] = name;
+            return (async function () {
+                // create a light DID from KILT
+                let ldid = await kilt.createKiltLightDID();
+                ldid["name"] = name;
 
-            // construct the user data root
-            let root = {
-                did_doc: ldid,
-                hash_table: {}
-            };
+                // construct the user data root
+                let root = {
+                    did_doc: ldid,
+                    hash_table: {}
+                };
 
-            await dbs.new_samaritan(JSON.stringify(root), this.cache);
-            await this.delay(1000).then(() => {
-                if (!this.cache.msg)
-                    throw new Error("request timeout");
-            });
-
-            let result = this.get_result();
-            return {
-                did: result.did,
-                keys: result.keys
-            };
+                let result = await dbs.new_samaritan(JSON.stringify(root));
+                return {
+                    did: result.did,
+                    keys: result.keys
+                };
+            })();
         },
 
         // request new API KEY for app
         new_api_key: async () => {
-            await dbs.new_api_key(this.cache);
-            await this.delay(1000).then(() => {
-                if (!this.cache.msg)
-                    throw new Error("request timeout");
-            });
-
-            let result = this.get_result();
-            return {
-                did: result.did,
-                keys: result.keys
-            };
+            return (async function () {
+                let result = await dbs.new_api_key();
+                return {
+                    did: result.did,
+                    keys: result.keys
+                };
+            })();
         },
 
         // authenticate app or samaritan
         auth: async(keys) => {
-            await dbs.auth_did(keys, this.cache);
-            await this.delay(1000).then(() => {
-                if (!this.cache.msg)
-                    throw new Error("request timeout");
-            });
-
-            let result = this.get_result();
-
+            let result = await dbs.auth_did(keys);
             // remember did
             this.session_did = result.did;
             return {
-                exists: JSON.parse(result.exists),
+                exists: result.exists,
                 did: result.did
             }
         },
@@ -128,13 +113,8 @@ export class SamaritanSDK {
             if (!this.session_did || this.session_did.indexOf("app") != -1 ) 
                 throw("You need to authenticate your samaritan before making any request");
 
-            await dbs.revoke(did, this.cache, this.session_did);
-            await this.delay(1000).then(() => {
-                if (!this.cache.msg)
-                    throw new Error("request timeout");
-            });
-
-            return this.get_result();
+            let result = await dbs.revoke(did, this.session_did);
+            return result;
         }
     }
 
@@ -143,33 +123,24 @@ export class SamaritanSDK {
         // insert into database
         insert: async (did, key, value) => {
             if (this.ensure_did_init()) {
-                await dbs.insert_record(did, key, value, this.cache, this.session_did);
+                let result = await dbs.insert_record(did, key, value, this.session_did);
+                return result;
             }
         },
 
         // retreive from database
         get: async (did, key) => {
             if (this.ensure_did_init()) {
-                await dbs.get_record(did, key, this.cache, this.session_did);
-                await this.delay(1000).then(() => {
-                    if (!this.cache.msg)
-                        throw new Error("request timeout");
-                });
-    
-                return this.get_result();
+                let result = await dbs.get_record(did, key, this.session_did);
+                return result;
             }
         },
         
         // delete an entry in the database
         delete: async (did, key) => {
             if (this.ensure_did_init()) {
-                await dbs.del_record(did, key, this.cache, this.session_did);
-                await this.delay(1000).then(() => {
-                    if (!this.cache.msg)
-                        throw new Error("request timeout");
-                });
-    
-                return this.get_result();
+                let result = await dbs.del_record(did, key, this.session_did);
+                return result;
             }
         },
     }

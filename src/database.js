@@ -19,24 +19,27 @@ export async function init(addr) {
 }
 
 // send the did document to the database network
-// code for `new_samaritan` is 1
-export async function new_samaritan(did_str) {
+// code for `newSamaritan` is 1
+export async function newSamaritan(didStr) {
     const result = await new Promise((resolve) => {
-        ws.on('open', function open() {
-            ws.send(`~1#${did_str}`);
+        // console.log('dfn');
+        // ws.on('open', function open() {
+        //     console.log("dankms");
+
+            ws.send(`~1#${didStr}`);
             ws.on('message', function message(data) {
                 console.log(`recieved: ${data}`);
                 resolve(data);
             });
-        });
+        // });
     });
 
     return JSON.parse(result);
 }
 
 // request new API KEY
-// code for `new_api_key` is 2
-export async function new_api_key() {
+// code for `newApiKey` is 2
+export async function newApiKey() {
     const result = await new Promise((resolve) => {
         ws.on('open', function open() {
             ws.send(`~2#`);
@@ -67,8 +70,8 @@ export async function auth_did(keys) {
 }
 
 // perform insertion into database
-// code for `insert_record` is 4
-export async function insert_record(did, key, value, session_did) {
+// code for `insertRecord` is 4
+export async function insertRecord(did, key, value, session_did) {
     const result = await new Promise((resolve) => {
         ws.send(`~4#${did ? did : ""}#${key}#${JSON.stringify(value)}#${session_did}`);
         ws.on('message', function message(data) {
@@ -82,8 +85,8 @@ export async function insert_record(did, key, value, session_did) {
 
 
 // retreive value from database
-// code for `insert_record` is 5
-export async function get_record(did, key, session_did) {
+// code for `insertRecord` is 5
+export async function getRecord(did, key, session_did) {
     const result = await new Promise((resolve) => {
         ws.send(`~5#${did ? did : ""}#${key}#${session_did}`);
         ws.on('message', function message(data) {
@@ -96,8 +99,8 @@ export async function get_record(did, key, session_did) {
 }
 
 // retreive value from database
-// code for `del_record` is 6
-export async function del_record(did, key, session_did) {
+// code for `delRecord` is 6
+export async function delRecord(did, key, session_did) {
     const result = await new Promise((resolve) => {
         ws.send(`~6#${did ? did : ""}#${key}#${session_did}`);
         ws.on('message', function message(data) {
@@ -110,7 +113,7 @@ export async function del_record(did, key, session_did) {
 }
 
 // revoke the access of an app
-// code for `del_record` is 6
+// code for `delRecord` is 6
 
 export async function revoke(did, session_did) {
     const result = await new Promise((resolve) => {

@@ -19,7 +19,7 @@ export class SamaritanSDK {
     }
 
     // initialize the library instance
-    init = async () => {
+    init = async() => {
         if (!this.connected) {
             console.log("initializing library...");
             if (await kilt.connect()) {
@@ -40,27 +40,29 @@ export class SamaritanSDK {
 
     // ensure there is a connection to the server
     ensureConnection = () => {
-        if (!this.connected)
-            throw ("You need to initialize the SDK to continue");
-
-        return true;
+        if (!this.connected) 
+            throw("You need to initialize the SDK to continue");
+        return true; 
     }
 
     isAuthSecure = (did, key) => {
         // check that the owner of the session is only saving/retreiving data about himself
-        if (key.startsWith('$') && did != this.sessionDid)
-            throw new Error("Access to personal data: denied");
+        if (key.startsWith('$')) {
+            if (this.sessionDid != "did:sam:app:FSIatHGrQ26XWGaH5CGogQkwgSEg7EvXYdGUMFTl9010j6D9" /* terminal did */)
+                throw new Error ("Access to personal data: denied");
+        }
+        return true
     }
 
     // ensure app is authenticated and initialized
     ensureDidInit = () => {
-        if (!this.sessionDid) {
-            if (this.sessionDid.indexOf("app") != -1)
-                throw ("You need to authenticate your app before making any request");
+        if (!this.sessionDid) { 
+            if (this.sessionDid.indexOf("app") != -1  )
+                throw("You need to authenticate your app before making any request");
             else
-                throw ("You need to authenticate your samaritan before making any request");
+                throw("You need to authenticate your samaritan before making any request");
         }
-        return true;
+        return true; 
     }
 
     delay = (ms) => {
@@ -70,8 +72,8 @@ export class SamaritanSDK {
     did = {
         // create new samaritan
         createNew: async (name) => {
-            if (!this.ensureConnection() && !name)
-                throw (`To create a Samaritan, you must specify a name.`);
+            if (!this.ensureConnection() && !name) 
+                throw(`To create a Samaritan, you must specify a name.`);
 
             return (async function () {
                 // create a light DID from KILT
@@ -86,8 +88,6 @@ export class SamaritanSDK {
 
                 let result = await dbs.newSamaritan(JSON.stringify(root));
 
-                // set session did
-                this.sessionDid = result.did;
                 return {
                     did: result.did,
                     keys: result.keys
@@ -107,18 +107,19 @@ export class SamaritanSDK {
         },
 
         // describe a samaritan by returning its DID document
-        describe: async (did) => {
+        describe: async(did) => {
             return (async function () {
                 let result = await dbs.describeDid(did);
-                return result.status != "Not found" ? JSON.parse(result).did_doc : "";
+                console.log(JSON.parse(result).didDoc);
+                return typeof result != String ? JSON.parse(result).didDoc : "";
             })();
         },
 
         // authenticate app or samaritan
-        auth: async (keys) => {
+        auth: async(keys) => {
             let result = await dbs.authDid(keys);
-            // remember did
-            this.sessionDid = result.did;
+            // remember did, if its an app
+            result.did.indexOf("app") != -1 ? this.sessionDid = result.did : "";
             return {
                 exists: result.exists,
                 did: result.did
@@ -126,9 +127,9 @@ export class SamaritanSDK {
         },
 
         // revoke the access of an app
-        revoke: async (did) => {
-            if (!this.sessionDid || this.sessionDid.indexOf("app") != -1)
-                throw ("You need to authenticate your samaritan before making any request");
+        revoke: async(did) => {
+            if (!this.sessionDid || this.sessionDid.indexOf("app") != -1 ) 
+                throw("You need to authenticate your samaritan before making any request");
 
             let result = await dbs.revoke(did, this.sessionDid);
             return result;
@@ -139,6 +140,8 @@ export class SamaritanSDK {
     db = {
         // insert into database
         insert: async (did, key, value) => {
+            // console.log(`${key} <--> ${value}`);
+            // console.log(`${this.sessionDid} <--> ${did}`);
             if (this.ensureDidInit() && this.isAuthSecure(did, key)) {
                 let result = await dbs.insertRecord(did, key, value, this.sessionDid);
                 return result;
@@ -152,7 +155,7 @@ export class SamaritanSDK {
                 return result;
             }
         },
-
+        
         // delete an entry in the database
         delete: async (did, key) => {
             if (this.ensureDidInit() && this.isAuthSecure(did, key)) {

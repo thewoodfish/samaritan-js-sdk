@@ -18,15 +18,27 @@ export async function init(addr) {
     return true;
 }
 
+// revoke the access of an app
+// code for `delRecord` is 0
+
+export async function describeDid(did) {
+    const result = await new Promise((resolve) => {
+        ws.send(`~0#${did}`);
+        ws.on('message', function message(data) {
+            // console.log(`received: ${data}`);
+            resolve(data);
+        });
+    });
+
+    return JSON.parse(result);
+}
+
 // send the did document to the database network
 // code for `newSamaritan` is 1
-export async function newSamaritan(didStr) {
+export async function newSamaritan(did_str) {
     const result = await new Promise((resolve) => {
-        // console.log('dfn');
         // ws.on('open', function open() {
-        //     console.log("dankms");
-
-            ws.send(`~1#${didStr}`);
+            ws.send(`~1#${did_str}`);
             ws.on('message', function message(data) {
                 console.log(`recieved: ${data}`);
                 resolve(data);
@@ -41,29 +53,29 @@ export async function newSamaritan(didStr) {
 // code for `newApiKey` is 2
 export async function newApiKey() {
     const result = await new Promise((resolve) => {
-        ws.on('open', function open() {
+        // ws.on('open', function open() {
             ws.send(`~2#`);
             ws.on('message', function message(data) {
                 console.log(`received: ${data}`);
                 resolve(data);
             });
-        });
+        // });
     })
 
     return JSON.parse(result);
 }
 
 // authenticate app || samaritan
-// code for `auth_did` is 3
-export async function auth_did(keys) {
+// code for `authDid` is 3
+export async function authDid(keys) {
     const result = await new Promise((resolve) => {
-        ws.on('open', function open() {
+        // ws.on('open', function open() {
             ws.send(`~3#${keys}`);
             ws.on('message', function message(data) {
                 console.log(`received: ${data}`);
                 resolve(data);
             });
-        });
+        // });
     });
 
     return JSON.parse(result);
@@ -126,3 +138,5 @@ export async function revoke(did, session_did) {
 
     return JSON.parse(result);
 }
+
+

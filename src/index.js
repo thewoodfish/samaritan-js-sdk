@@ -1,7 +1,8 @@
 // imports
+import { response } from 'express';
 import WebSocket from 'ws';
 
-const wsEndpoint = 'ws://127.0.0.1:1509';
+const wsEndpoint = 'ws://127.0.0.1:8888';
 const ws = new WebSocket(wsEndpoint);
 
 // Handle WebSocket connection errors
@@ -23,11 +24,8 @@ async function sendMessage(message) {
     });
 }
 
-// Handle WebSocket connection success
-ws.on('open', function () {
-    console.log('WebSocket connection established');
-
-    const api = {
+const
+    api = {
         // Define the API for DID manipulation
         did: {
             new: async (data, callback, errorCallback) => {
@@ -35,80 +33,74 @@ ws.on('open', function () {
                 if ((data.type == "sam" || data.type == "app") && data.password) {
                     const message = `new::${data.type}::${data.password}`;
                     const response = await sendMessage(message);
-                    // process callback
-                    if (callback) {
-                        // Parse the response
-                        const response = JSON.parse(response);
-                        if (response.status == "ok") {
-                            // handle the response
-                            callback(response.data);
-                        } else {
-                            if (errorCallback) errorCallback(response.data);
-                        }
+                    // Parse the response
+                    if (response.status == "ok") {
+                        // handle the response
+                        if (callback) callback(response.data);
+                    } else {
+                        if (errorCallback) errorCallback(response.data);
                     }
-                    return response;
                 } else {
                     if (errorCallback) {
                         // call the error callback
                         errorCallback({
-                            msg: ""
+                            msg: "bad input"
                         });
                     }
                 }
             },
             // authenticate app or samaritan
-            auth: async (data, callback, errorCallback) => {
-                // check for lexical compliance
-                if (data.did && data.password) {
-                    const message = `auth::${data.type}::${data.password}`;
-                    const response = await sendMessage(message);
-                    // process callback
-                    if (callback) {
+            auth: async (config, data, callback, errorCallback) => {
+                // first check for config data
+                if (configIsValid(config)) {
+                    // check for lexical compliance
+                    if (data.sam_did && data.password) {
+                        const message =
+                            data.sam_did.includes("sam:root") ? `auth::${data.sam_did}::${data.password}`
+                                : `init::${data.sam_did}::${data.password}`;
+                        const response = await sendMessage(message);
+
                         // Parse the response
-                        const response = JSON.parse(response);
                         if (response.status == "ok") {
                             // handle the response
-                            callback(response.data);
+                            if (callback) callback(response.data);
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
-                    }
-                    return response;
-                } else {
-                    if (errorCallback) {
-                        // call the error callback
-                        errorCallback({
-                            msg: ""
-                        });
+                    } else {
+                        if (errorCallback) {
+                            // call the error callback
+                            errorCallback({
+                                msg: "bad input"
+                            });
+                        }
                     }
                 }
             },
             // revoke the access of an app
-            revoke: async (data, callback, errorCallback) => {
-                // check for lexical compliance
-                if (data.deny && data.password) {
-                    const message =
-                        data.deny ? `revoke::${data.sam_did}::${data.app_did}`
-                            : `unrevoke::${data.type}::${data.password}`;
-                    const response = await sendMessage(message);
-                    // process callback
-                    if (callback) {
+            revoke: async (config, data, callback, errorCallback) => {
+                // first check for config data
+                if (configIsValid(config)) {
+                    // check for lexical compliance
+                    if (data.sam_did && data.app_did && (data.deny == true || data.deny == false)) {
+                        const message =
+                            data.deny ? `revoke::${data.sam_did}::${data.app_did}`
+                                : `unrevoke::${data.sam_did}::${data.app_did}`;
+                        const response = await sendMessage(message);
                         // Parse the response
-                        const response = JSON.parse(response);
                         if (response.status == "ok") {
                             // handle the response
-                            callback(response.data);
+                            if (callback) callback(response.data);
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
-                    }
-                    return response;
-                } else {
-                    if (errorCallback) {
-                        // call the error callback
-                        errorCallback({
-                            msg: ""
-                        });
+                    } else {
+                        if (errorCallback) {
+                            // call the error callback
+                            errorCallback({
+                                msg: "bad input"
+                            });
+                        }
                     }
                 }
             }
@@ -116,107 +108,115 @@ ws.on('open', function () {
 
         // Define the API for database operations
         db: {
-            insert: async (data, callback, errorCallback) => {
-                // check for lexical compliance
-                if (data.app_did && data.key && data.value) {
-                    const message = `insert::${data.app_did}::${data.key}::${data.value}::${data.sam_did /*optional */}`;
-                    const response = await sendMessage(message);
-                    // process callback
-                    if (callback) {
+            insert: async (config, data, callback, errorCallback) => {
+                // first check for config data
+                if (configIsValid(config)) {
+                    // check for lexical compliance
+                    if (data.app_did && data.keys && data.values && (data.keys.length == data.values.length)) {
+                        // concatenate the keys and values
+                        let keys = "";
+                        let values = "";
+                        for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
+                        for (var j = 0; j < data.values.length; j++) values += `${data.values[j]};`;
+
+                        const message = `insert::${data.app_did}::${keys.substring(0, keys.length - 1)}::${values.substring(0, values.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const response = await sendMessage(message);
+
                         // Parse the response
-                        const response = JSON.parse(response);
                         if (response.status == "ok") {
                             // handle the response
-                            callback(response.data);
+                            if (callback) callback(response.data);
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
-                    }
-                    return response;
-                } else {
-                    if (errorCallback) {
-                        // call the error callback
-                        errorCallback({
-                            msg: ""
-                        });
+                    } else {
+                        if (errorCallback) {
+                            // call the error callback
+                            errorCallback({
+                                msg: "bad input"
+                            });
+                        }
                     }
                 }
             },
-            get: async (data, callback, errorCallback) => {
-                // check for lexical compliance
-                if (data.app_did && data.key) {
-                    const message = `get::${data.app_did}::${data.key}::${data.sam_did /*optional */}`;
-                    const response = await sendMessage(message);
-                    // process callback
-                    if (callback) {
+            get: async (config, data, callback, errorCallback) => {
+                // first check for config data
+                if (configIsValid(config)) {
+                    // check for lexical compliance
+                    if (data.app_did && data.keys && data.keys.length) {
+                        // concatenate the keys and values
+                        let keys = "";
+                        for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
+
+                        const message = `get::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const response = await sendMessage(message);
+
                         // Parse the response
-                        const response = JSON.parse(response);
                         if (response.status == "ok") {
                             // handle the response
-                            callback(response.data);
+                            if (callback) callback(response.data);
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
-                    }
-                    return response;
-                } else {
-                    if (errorCallback) {
-                        // call the error callback
-                        errorCallback({
-                            msg: ""
-                        });
+                    } else {
+                        if (errorCallback) {
+                            // call the error callback
+                            errorCallback({
+                                msg: "bad input"
+                            });
+                        }
                     }
                 }
             },
-            del: async (data, callback, errorCallback) => {
-                // check for lexical compliance
-                if (data.app_did && data.key) {
-                    const message = `del::${data.app_did}::${data.key}::${data.sam_did /*optional */}`;
-                    const response = await sendMessage(message);
-                    // process callback
-                    if (callback) {
+            del: async (config, data, callback, errorCallback) => {
+                // first check for config data
+                if (configIsValid(config)) {
+                    // check for lexical compliance
+                    if (data.app_did && data.keys && data.keys.length) {
+                        // concatenate the keys and values
+                        let keys = "";
+                        for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
+
+                        const message = `del::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const response = await sendMessage(message);
                         // Parse the response
-                        const response = JSON.parse(response);
                         if (response.status == "ok") {
                             // handle the response
-                            callback(response.data);
+                            if (callback) callback(response.data);
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
-                    }
-                    return response;
-                } else {
-                    if (errorCallback) {
-                        // call the error callback
-                        errorCallback({
-                            msg: ""
-                        });
+                    } else {
+                        if (errorCallback) {
+                            // call the error callback
+                            errorCallback({
+                                msg: "bad input"
+                            });
+                        }
                     }
                 }
             },
-            getall: async (data, callback, errorCallback) => {
-                // check for lexical compliance
-                if (data.app_did) {
-                    const message = `getall::${data.app_did}::${data.sam_did /*optional */}`;
-                    const response = await sendMessage(message);
-                    // process callback
-                    if (callback) {
+            getall: async (config, data, callback, errorCallback) => {
+                // first check for config data
+                if (configIsValid(config)) {
+                    // check for lexical compliance
+                    if (data.app_did) {
+                        const message = `getall::${data.app_did}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const response = await sendMessage(message);
                         // Parse the response
-                        const response = JSON.parse(response);
                         if (response.status == "ok") {
                             // handle the response
-                            callback(response.data);
+                            if (callback) callback(response.data);
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
-                    }
-                    return response;
-                } else {
-                    if (errorCallback) {
-                        // call the error callback
-                        errorCallback({
-                            msg: ""
-                        });
+                    } else {
+                        if (errorCallback) {
+                            // call the error callback
+                            errorCallback({
+                                msg: "bad input"
+                            });
+                        }
                     }
                 }
             },
@@ -224,6 +224,25 @@ ws.on('open', function () {
 
     };
 
-    // Export the API
-    module.exports = api;
+// Handle WebSocket connection success
+ws.on('open', function () {
+    console.log('WebSocket connection established');
 });
+
+// helper functions
+function configIsValid(config) {
+    // check the for the compliance of the config data
+    if (config.did && config.keys) {
+        // check for did
+        if (config.did.indexOf("did:sam:apps:") != -1) {
+            // check for the number of words
+            if (config.keys.split("").length == 12) return true;
+            else throw new Error("Invalid length of keys.");
+        } else
+            throw new Error("Incorrect application DID format.");
+    } else
+        throw new Error("Your configuration data is incomplete. DID or Key is missing.");
+}
+
+// Export the API
+export default api;

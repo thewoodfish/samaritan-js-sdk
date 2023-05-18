@@ -1,6 +1,6 @@
 {
   "name": "samaritan-js-sdk",
-  "version": "0.0.38",
+  "version": "0.0.39",
   "description": "This JS library serves as an interface to SamaritanOS for web applications.",
   "main": "src/index.js",
   "scripts": {
@@ -12,12 +12,9 @@
   },
   "keywords": [
     "web3",
-    "polkadot",
-    "kilt",
     "blockchain",
     "decentralization",
-    "samaritan",
-    "substrate"
+    "samaritan"
   ],
   "author": "@thewoodfish",
   "license": "ISC",

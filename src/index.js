@@ -56,8 +56,8 @@ const
                     // check for lexical compliance
                     if (data.sam_did && data.password) {
                         const message =
-                            data.sam_did.includes("sam:root") ? `auth::${data.sam_did}::${data.password}`
-                                : `init::${data.sam_did}::${data.password}`;
+                            data.sam_did.includes("sam:root") ? `${config.did}::${config.keys}~~auth::${data.sam_did}::${data.password}`
+                                : `${config.did}::${config.keys}~~init::${data.sam_did}::${data.password}`;
                         const response = await sendMessage(message);
 
                         // Parse the response
@@ -84,8 +84,8 @@ const
                     // check for lexical compliance
                     if (data.sam_did && data.app_did && (data.deny == true || data.deny == false)) {
                         const message =
-                            data.deny ? `revoke::${data.sam_did}::${data.app_did}`
-                                : `unrevoke::${data.sam_did}::${data.app_did}`;
+                            data.deny ? `${config.did}::${config.keys}~~revoke::${data.sam_did}::${data.app_did}`
+                                : `${config.did}::${config.keys}~~unrevoke::${data.sam_did}::${data.app_did}`;
                         const response = await sendMessage(message);
                         // Parse the response
                         if (response.status == "ok") {
@@ -119,7 +119,7 @@ const
                         for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
                         for (var j = 0; j < data.values.length; j++) values += `${data.values[j]};`;
 
-                        const message = `insert::${data.app_did}::${keys.substring(0, keys.length - 1)}::${values.substring(0, values.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const message = `${config.did}::${config.keys}~~insert::${data.app_did}::${keys.substring(0, keys.length - 1)}::${values.substring(0, values.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
                         const response = await sendMessage(message);
 
                         // Parse the response
@@ -148,7 +148,7 @@ const
                         let keys = "";
                         for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
 
-                        const message = `get::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const message = `${config.did}::${config.keys}~~get::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
                         const response = await sendMessage(message);
 
                         // Parse the response
@@ -177,7 +177,7 @@ const
                         let keys = "";
                         for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
 
-                        const message = `del::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const message = `${config.did}::${config.keys}~~del::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
                         const response = await sendMessage(message);
                         // Parse the response
                         if (response.status == "ok") {
@@ -201,7 +201,7 @@ const
                 if (configIsValid(config)) {
                     // check for lexical compliance
                     if (data.app_did) {
-                        const message = `getall::${data.app_did}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const message = `${config.did}::${config.keys}~~getall::${data.app_did}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
                         const response = await sendMessage(message);
                         // Parse the response
                         if (response.status == "ok") {

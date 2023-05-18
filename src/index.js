@@ -236,7 +236,7 @@ function configIsValid(config) {
         // check for did
         if (config.did.indexOf("did:sam:apps:") != -1) {
             // check for the number of words
-            if (config.keys.split("").length == 12) return true;
+            if (config.keys.split(' ').length == 12) return true;
             else throw new Error("Invalid length of keys.");
         } else
             throw new Error("Incorrect application DID format.");

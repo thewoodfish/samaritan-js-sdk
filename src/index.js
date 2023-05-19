@@ -1,14 +1,24 @@
 // imports
 import { response } from 'express';
 import WebSocket from 'ws';
+import { Keyring } from '@polkadot/keyring';
 
-const wsEndpoint = 'ws://127.0.0.1:8888';
-const ws = new WebSocket(wsEndpoint);
+const keyring = new Keyring({ type: 'sr25519' });
+let ws = undefined;
 
-// Handle WebSocket connection errors
-ws.on('error', function (error) {
-    console.error('WebSocket connection error:', error);
-});
+function initSamDB(wsAddress) {
+    ws = new WebSocket(wsAddress);
+
+    // Handle WebSocket connection errors
+    ws.on('error', function (error) {
+        console.error('WebSocket connection error:', error);
+    });
+
+    // Handle WebSocket connection success
+    ws.on('open', function () {
+        console.log('WebSocket connection established');
+    });
+}
 
 async function sendMessage(message) {
     return new Promise((resolve, reject) => {
@@ -56,8 +66,8 @@ const
                     // check for lexical compliance
                     if (data.sam_did && data.password) {
                         const message =
-                            data.sam_did.includes("sam:root") ? `${config.did}::${config.keys}~~auth::${data.sam_did}::${data.password}`
-                                : `${config.did}::${config.keys}~~init::${data.sam_did}::${data.password}`;
+                            data.sam_did.includes("sam:root") ? `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~auth::${data.sam_did}::${data.password}`
+                                : `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~init::${data.sam_did}::${data.password}`;
                         const response = await sendMessage(message);
 
                         // Parse the response
@@ -84,8 +94,8 @@ const
                     // check for lexical compliance
                     if (data.sam_did && data.app_did && (data.deny == true || data.deny == false)) {
                         const message =
-                            data.deny ? `${config.did}::${config.keys}~~revoke::${data.sam_did}::${data.app_did}`
-                                : `${config.did}::${config.keys}~~unrevoke::${data.sam_did}::${data.app_did}`;
+                            data.deny ? `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~revoke::${data.sam_did}::${data.app_did}`
+                                : `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~unrevoke::${data.sam_did}::${data.app_did}`;
                         const response = await sendMessage(message);
                         // Parse the response
                         if (response.status == "ok") {
@@ -119,13 +129,16 @@ const
                         for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
                         for (var j = 0; j < data.values.length; j++) values += `${data.values[j]};`;
 
-                        const message = `${config.did}::${config.keys}~~insert::${data.app_did}::${keys.substring(0, keys.length - 1)}::${values.substring(0, values.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const message = `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~insert::${data.app_did}::${keys.substring(0, keys.length - 1)}::${values.substring(0, values.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
                         const response = await sendMessage(message);
 
                         // Parse the response
                         if (response.status == "ok") {
-                            // handle the response
-                            if (callback) callback(response.data);
+                            const returnData = JSON.parse(JSON.stringify(response.data));
+                            const output = JSON.parse(returnData['0']);
+                            if (callback) callback({
+                                output
+                            });
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
@@ -148,13 +161,19 @@ const
                         let keys = "";
                         for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
 
-                        const message = `${config.did}::${config.keys}~~get::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const message = `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~get::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
                         const response = await sendMessage(message);
 
                         // Parse the response
                         if (response.status == "ok") {
-                            // handle the response
-                            if (callback) callback(response.data);
+                            // make the data more dev-friendly
+                            const returnData = JSON.parse(JSON.stringify(response.data));
+                            const input = JSON.parse(returnData['0']);
+                            const output = JSON.parse(returnData['1']);
+                            if (callback) callback({
+                                input,
+                                output
+                            });
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
@@ -177,12 +196,18 @@ const
                         let keys = "";
                         for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
 
-                        const message = `${config.did}::${config.keys}~~del::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const message = `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~del::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
                         const response = await sendMessage(message);
                         // Parse the response
                         if (response.status == "ok") {
                             // handle the response
-                            if (callback) callback(response.data);
+                            const returnData = JSON.parse(JSON.stringify(response.data));
+                            const input = JSON.parse(returnData['0']);
+                            const output = JSON.parse(returnData['1']);
+                            if (callback) callback({
+                                input,
+                                output
+                            });
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
@@ -201,7 +226,7 @@ const
                 if (configIsValid(config)) {
                     // check for lexical compliance
                     if (data.app_did) {
-                        const message = `${config.did}::${config.keys}~~getall::${data.app_did}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const message = `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~getall::${data.app_did}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
                         const response = await sendMessage(message);
                         // Parse the response
                         if (response.status == "ok") {
@@ -221,13 +246,7 @@ const
                 }
             },
         },
-
     };
-
-// Handle WebSocket connection success
-ws.on('open', function () {
-    console.log('WebSocket connection established');
-});
 
 // helper functions
 function configIsValid(config) {
@@ -243,6 +262,6 @@ function configIsValid(config) {
     } else
         throw new Error("Your configuration data is incomplete. DID or Key is missing.");
 }
- 
+
 // Export the API
-export default api;
+export { api, initSamDB };

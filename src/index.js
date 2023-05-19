@@ -243,6 +243,6 @@ function configIsValid(config) {
     } else
         throw new Error("Your configuration data is incomplete. DID or Key is missing.");
 }
-
+ 
 // Export the API
 export default api;

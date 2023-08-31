@@ -1,31 +1,29 @@
 // imports
-import { response } from 'express';
 import WebSocket from 'ws';
-import { Keyring } from '@polkadot/keyring';
+import { blake2AsHex } from '@polkadot/util-crypto';
 
-const keyring = new Keyring({ type: 'sr25519' });
-let ws = undefined;
+// blockchain essentials
+import { ApiPromise, WsProvider } from '@polkadot/api';
+import { mnemonicGenerate, cryptoWaitReady, blake2AsHex } from '@polkadot/util-crypto';
+const { Keyring } = require('@polkadot/keyring');
+import { ContractPromise } from '@polkadot/api-contract';
 
-function initSamDB(wsAddress) {
-    ws = new WebSocket(wsAddress);
+const SAM_DB_LISTENING_PORT = 2027;
 
-    // Handle WebSocket connection errors
-    ws.on('error', function (error) {
-        console.error('WebSocket connection error:', error);
-    });
+// local imports
+import * as chain from "./contract.cjs";
 
-    // Handle WebSocket connection success
-    ws.on('open', function () {
-        console.log('WebSocket connection established');
-    });
-}
+async function sendMessage(ws, message) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.error('WebSocket is not connected');
+        return null; // Or handle the error condition as appropriate
+    }
 
-async function sendMessage(message) {
     return new Promise((resolve, reject) => {
         ws.send(message);
-        ws.once('message', (response) => {
+        ws.addEventListener('message', (response) => {
             try {
-                const parsedResponse = JSON.parse(response);
+                const parsedResponse = JSON.parse(response.data);
                 resolve(parsedResponse);
             } catch (error) {
                 reject(error);
@@ -36,119 +34,66 @@ async function sendMessage(message) {
 
 const
     api = {
-        // Define the API for DID manipulation
-        did: {
-            new: async (data, callback, errorCallback) => {
-                // check for lexical compliance
-                if ((data.type == "sam" || data.type == "app") && data.password) {
-                    const message = `new::${data.type}::${data.password}`;
-                    const response = await sendMessage(message);
-                    // Parse the response
-                    if (response.status == "ok") {
-                        // handle the response
-                        if (callback) callback(response.data);
-                    } else {
-                        if (errorCallback) errorCallback(response.data);
-                    }
-                } else {
-                    if (errorCallback) {
-                        // call the error callback
-                        errorCallback({
-                            msg: "bad input"
-                        });
-                    }
-                }
-            },
-            // authenticate app or samaritan
-            auth: async (config, data, callback, errorCallback) => {
-                // first check for config data
-                if (configIsValid(config)) {
-                    // check for lexical compliance
-                    if (data.sam_did && data.password) {
-                        const message =
-                            data.sam_did.includes("sam:root") ? `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~auth::${data.sam_did}::${data.password}`
-                                : `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~init::${data.sam_did}::${data.password}`;
-                        const response = await sendMessage(message);
+        connect: async (did) => {
+            // we need to get the address of the nodes running the application
+            let nodeAddresses = await chain.getSubscribedNodes();
 
-                        // Parse the response
-                        if (response.status == "ok") {
-                            // handle the response
-                            if (callback) callback(response.data);
-                        } else {
-                            if (errorCallback) errorCallback(response.data);
-                        }
-                    } else {
-                        if (errorCallback) {
-                            // call the error callback
-                            errorCallback({
-                                msg: "bad input"
-                            });
-                        }
-                    }
-                }
-            },
-            // revoke the access of an app
-            revoke: async (config, data, callback, errorCallback) => {
-                // first check for config data
-                if (configIsValid(config)) {
-                    // check for lexical compliance
-                    if (data.sam_did && data.app_did && (data.deny == true || data.deny == false)) {
-                        const message =
-                            data.deny ? `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~revoke::${data.sam_did}::${data.app_did}`
-                                : `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~unrevoke::${data.sam_did}::${data.app_did}`;
-                        const response = await sendMessage(message);
-                        // Parse the response
-                        if (response.status == "ok") {
-                            // handle the response
-                            if (callback) callback(response.data);
-                        } else {
-                            if (errorCallback) errorCallback(response.data);
-                        }
-                    } else {
-                        if (errorCallback) {
-                            // call the error callback
-                            errorCallback({
-                                msg: "bad input"
-                            });
-                        }
-                    }
-                }
+            // select randomly and try to connect, else pick another
+            let wsAddress = extractAndSelectRandomIp(nodeAddresses);
+            // then concatenate it with SamaritanDB default listening port
+            wsAddress += `${SAM_DB_LISTENING_PORT}`;
+            console.log(wsAddress);
+
+            try {
+                const ws = new WebSocket(wsAddress);
+
+                ws.addEventListener('error', (error) => {
+                    console.error('WebSocket connection error:', error);
+                });
+
+                ws.addEventListener('open', () => {
+                    console.log('WebSocket connection established');
+                });
+
+                return ws; // Return the WebSocket instance for further use
+            } catch (error) {
+                console.error('WebSocket initialization error:', error);
+                throw error; // Rethrow the error to handle it at a higher level
             }
         },
 
         // Define the API for database operations
         db: {
-            insert: async (config, data, callback, errorCallback) => {
+            insert: async (ws, config, data, callback, errorCallback) => {
                 // first check for config data
                 if (configIsValid(config)) {
                     // check for lexical compliance
                     if (data.app_did && data.keys && data.values && (data.keys.length == data.values.length)) {
                         // concatenate the keys and values
-                        let keys = "";
-                        let values = "";
-                        for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
-                        for (var j = 0; j < data.values.length; j++) values += `${data.values[j]};`;
+                        let vector = [];
+                        for (var i = 0; i < data.keys.length; i++) vector.push(data.keys[i]);
+                        vector.push("::")   // this would serve as a separator between keys and values
+                        for (var j = 0; j < data.values.length; j++) vector.push(data.values[j]);
 
-                        const message = `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~insert::${data.app_did}::${keys.substring(0, keys.length - 1)}::${values.substring(0, values.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
-                        const response = await sendMessage(message);
+                        const message = JSON.stringify({
+                            did: data.app_did,
+                            password: blake2AsHex(data.keys),   // the password is the hash of the keys
+                            command: "insert",
+                            data: vector,
+                            sam_did: data.sam_did ?? ""
+                        });
+
+                        const response = await sendMessage(ws, message);
+                        console.log(response);
 
                         // Parse the response
-                        if (response.status == "ok") {
-                            const returnData = JSON.parse(JSON.stringify(response.data));
-                            const output = JSON.parse(returnData['0']);
-                            if (callback) callback({
-                                output
-                            });
+                        if (response.status == 200) {
+                            if (callback) callback();
                         } else {
-                            if (errorCallback) errorCallback(response.data);
+                            if (errorCallback) errorCallback();
                         }
                     } else {
-                        if (errorCallback) {
-                            // call the error callback
-                            errorCallback({
-                                msg: "bad input"
-                            });
-                        }
+                        throw new Error("Bad lexical composition of arguments");
                     }
                 }
             },
@@ -158,32 +103,27 @@ const
                     // check for lexical compliance
                     if (data.app_did && data.keys && data.keys.length) {
                         // concatenate the keys and values
-                        let keys = "";
-                        for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
+                        let vector = [];
+                        for (var i = 0; i < data.keys.length; i++) vector.push(data.keys[i]);
 
-                        const message = `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~get::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
+                        const message = JSON.stringify({
+                            did: data.app_did,
+                            password: blake2AsHex(data.keys),   // the password is the hash of the keys
+                            command: "get",
+                            data: vector,
+                            sam_did: data.sam_did ?? ""
+                        });
+
                         const response = await sendMessage(message);
-
+                        console.log(response);
                         // Parse the response
-                        if (response.status == "ok") {
-                            // make the data more dev-friendly
-                            const returnData = JSON.parse(JSON.stringify(response.data));
-                            const input = JSON.parse(returnData['0']);
-                            const output = JSON.parse(returnData['1']);
-                            if (callback) callback({
-                                input,
-                                output
-                            });
+                        if (response.status == 200) {
+                            if (callback) callback(response.data.values);
                         } else {
                             if (errorCallback) errorCallback(response.data);
                         }
                     } else {
-                        if (errorCallback) {
-                            // call the error callback
-                            errorCallback({
-                                msg: "bad input"
-                            });
-                        }
+                        throw new Error("Bad lexical composition of arguments");
                     }
                 }
             },
@@ -192,56 +132,26 @@ const
                 if (configIsValid(config)) {
                     // check for lexical compliance
                     if (data.app_did && data.keys && data.keys.length) {
-                        // concatenate the keys and values
-                        let keys = "";
-                        for (var i = 0; i < data.keys.length; i++) keys += `${data.keys[i]};`;
+                        let vector = [];
+                        for (var i = 0; i < data.keys.length; i++) vector.push(data.keys[i]);
 
-                        const message = `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~del::${data.app_did}::${keys.substring(0, keys.length - 1)}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
-                        const response = await sendMessage(message);
+                        const message = JSON.stringify({
+                            did: data.app_did,
+                            password: blake2AsHex(data.keys),   // the password is the hash of the keys
+                            command: "del",
+                            data: vector,
+                            sam_did: data.sam_did ?? ""
+                        });
+
                         // Parse the response
-                        if (response.status == "ok") {
-                            // handle the response
-                            const returnData = JSON.parse(JSON.stringify(response.data));
-                            const input = JSON.parse(returnData['0']);
-                            const output = JSON.parse(returnData['1']);
-                            if (callback) callback({
-                                input,
-                                output
-                            });
+                        // Parse the response
+                        if (response.status == 200) {
+                            if (callback) callback();
                         } else {
-                            if (errorCallback) errorCallback(response.data);
+                            if (errorCallback) errorCallback();
                         }
                     } else {
-                        if (errorCallback) {
-                            // call the error callback
-                            errorCallback({
-                                msg: "bad input"
-                            });
-                        }
-                    }
-                }
-            },
-            getall: async (config, data, callback, errorCallback) => {
-                // first check for config data
-                if (configIsValid(config)) {
-                    // check for lexical compliance
-                    if (data.app_did) {
-                        const message = `${config.did}::${keyring.createFromUri(config.keys, 'sr25519').address}~~getall::${data.app_did}${data.sam_did ? `::${data.sam_did}` : "" /*optional */}`;
-                        const response = await sendMessage(message);
-                        // Parse the response
-                        if (response.status == "ok") {
-                            // handle the response
-                            if (callback) callback(response.data);
-                        } else {
-                            if (errorCallback) errorCallback(response.data);
-                        }
-                    } else {
-                        if (errorCallback) {
-                            // call the error callback
-                            errorCallback({
-                                msg: "bad input"
-                            });
-                        }
+                        throw new Error("Bad lexical composition of arguments");
                     }
                 }
             },
@@ -250,7 +160,7 @@ const
 
 // helper functions
 function configIsValid(config) {
-    // check the for the compliance of the config data
+    // check for the compliance of the config data
     if (config.did && config.keys) {
         // check for did
         if (config.did.indexOf("did:sam:apps:") != -1) {
@@ -260,8 +170,30 @@ function configIsValid(config) {
         } else
             throw new Error("Incorrect application DID format.");
     } else
-        throw new Error("Your configuration data is incomplete. DID or Key is missing.");
+        throw new Error("Your configuration data is incomplete. Application DID or Key is missing.");
+}
+
+// This function is to select the closest node to the current client
+// For now, it will just be selected at random
+function extractAndSelectRandomIp(inputString) {
+    const parts = inputString.split('$$$');
+    const extractedData = [];
+
+    for (const part of parts) {
+        const match = part.match(/\/ip4\/([\d.]+)\/tcp\/\d+(\/p2p\/[a-z0-9]+)?/i);
+        if (match) {
+            const ipAddress = match[1];
+            extractedData.push({ ipAddress });
+        }
+    }
+
+    if (extractedData.length === 0) {
+        return null;
+    }
+
+    const randomIndex = Math.floor(Math.random() * extractedData.length);
+    return extractedData[randomIndex].ipAddress;
 }
 
 // Export the API
-export { api, initSamDB };
+export { api };

@@ -1,6 +1,6 @@
 {
   "name": "samaritan-js-sdk",
-  "version": "0.0.41",
+  "version": "0.0.44",
   "description": "This JS library serves as an interface to SamaritanOS for web applications.",
   "main": "src/index.js",
   "scripts": {
@@ -13,6 +13,7 @@
   "keywords": [
     "web3",
     "blockchain",
+    "PolkadotJS",
     "decentralization",
     "samaritan"
   ],
@@ -24,6 +25,8 @@
   },
   "homepage": "https://github.com/thewoodfish/samaritan-js-sdk#readme",
   "dependencies": {
+    "@polkadot/keyring": "^12.2.1",
+    "@polkadot/util-crypto": "^12.2.1",
     "node": "^19.3.0",
     "ws": "^8.11.0"
   }

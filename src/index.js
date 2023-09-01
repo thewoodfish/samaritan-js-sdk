@@ -82,6 +82,15 @@ const
             }
         },
 
+        close: async (ws) => {
+            try {
+                await ws.close();
+                console.log('WebSocket connection closed.');
+            } catch (error) {
+                console.error('Error closing WebSocket connection:', error);
+            }
+        },
+
         // Define the API for database operations
         db: {
             insert: async (ws, config, data, callback, errorCallback) => {

@@ -21,7 +21,7 @@ import * as meta from "./metadata.js";
 
 // constants
 const SAM_DB_LISTENING_PORT = 2027;
-const CONTRACT_ADDRESS = "5Gn7GYEeQMiCDXg8QrGUFrYSL4pENGkEpZmpMm4AB9ZHzaNA";
+const CONTRACT_ADDRESS = "5D9k4NNFqniNX8fUQ8N3hYdu336Dnievx4JFRjKuDuYGvvmN";
 // contains no balance, only used to read state of contract
 const MNEMONICS = "dilemma quarter decrease simple climb boring liberty tobacco upper axis neutral suit";
 const SamOS = keyring.createFromUri(MNEMONICS, 'sr25519');

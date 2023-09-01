@@ -3,7 +3,7 @@
 export function metadata() {
     return {
         "source": {
-            "hash": "0x9f797bcf60450019eed380e01fd4ebf2ed72e0f2d988c32f328977d6f0088bf1",
+            "hash": "0x2c0ae4f4a146bc6f3e582391b5cb2fde5d809068a2425c6c06058275b41ab056",
             "language": "ink! 4.2.1",
             "compiler": "rustc 1.69.0",
             "build_info": {
@@ -49,38 +49,38 @@ export function metadata() {
                     "displayName": [
                         "AccountId"
                     ],
-                    "type": 7
+                    "type": 9
                 },
                 "balance": {
                     "displayName": [
                         "Balance"
                     ],
-                    "type": 9
+                    "type": 11
                 },
                 "blockNumber": {
                     "displayName": [
                         "BlockNumber"
                     ],
-                    "type": 12
+                    "type": 14
                 },
                 "chainExtension": {
                     "displayName": [
                         "ChainExtension"
                     ],
-                    "type": 13
+                    "type": 15
                 },
                 "hash": {
                     "displayName": [
                         "Hash"
                     ],
-                    "type": 10
+                    "type": 12
                 },
                 "maxEventTopics": 4,
                 "timestamp": {
                     "displayName": [
                         "Timestamp"
                     ],
-                    "type": 11
+                    "type": 13
                 }
             },
             "events": [],
@@ -128,7 +128,7 @@ export function metadata() {
                     ],
                     "label": "new_account",
                     "mutates": true,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
@@ -137,6 +137,34 @@ export function metadata() {
                         "type": 3
                     },
                     "selector": "0x6030efe9"
+                },
+                {
+                    "args": [
+                        {
+                            "label": "did",
+                            "type": {
+                                "displayName": [
+                                    "DID"
+                                ],
+                                "type": 1
+                            }
+                        }
+                    ],
+                    "default": false,
+                    "docs": [
+                        " Checks if a DID exists"
+                    ],
+                    "label": "check_did_existence",
+                    "mutates": false,
+                    "payable": true,
+                    "returnType": {
+                        "displayName": [
+                            "ink",
+                            "MessageResult"
+                        ],
+                        "type": 6
+                    },
+                    "selector": "0x3c5089b2"
                 },
                 {
                     "args": [
@@ -157,7 +185,7 @@ export function metadata() {
                     ],
                     "label": "add_address",
                     "mutates": true,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
@@ -185,7 +213,7 @@ export function metadata() {
                     ],
                     "label": "remove_address",
                     "mutates": true,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
@@ -203,13 +231,13 @@ export function metadata() {
                     ],
                     "label": "get_node_addresses",
                     "mutates": false,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
                             "MessageResult"
                         ],
-                        "type": 6
+                        "type": 8
                     },
                     "selector": "0x06d0512d"
                 },
@@ -240,13 +268,13 @@ export function metadata() {
                     ],
                     "label": "get_account_ht_cid",
                     "mutates": false,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
                             "MessageResult"
                         ],
-                        "type": 6
+                        "type": 8
                     },
                     "selector": "0x8264b180"
                 },
@@ -277,7 +305,7 @@ export function metadata() {
                     ],
                     "label": "update_account_ht_cid",
                     "mutates": true,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
@@ -314,7 +342,7 @@ export function metadata() {
                     ],
                     "label": "subscribe_node",
                     "mutates": true,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
@@ -351,7 +379,7 @@ export function metadata() {
                     ],
                     "label": "unsubscribe_node",
                     "mutates": true,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
@@ -379,13 +407,13 @@ export function metadata() {
                     ],
                     "label": "get_subscribers",
                     "mutates": true,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
                             "MessageResult"
                         ],
-                        "type": 6
+                        "type": 8
                     },
                     "selector": "0x16b7fe74"
                 },
@@ -416,7 +444,7 @@ export function metadata() {
                     ],
                     "label": "restrict",
                     "mutates": true,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
@@ -453,7 +481,7 @@ export function metadata() {
                     ],
                     "label": "unrestrict",
                     "mutates": true,
-                    "payable": false,
+                    "payable": true,
                     "returnType": {
                         "displayName": [
                             "ink",
@@ -663,6 +691,56 @@ export function metadata() {
                                 {
                                     "fields": [
                                         {
+                                            "type": 7
+                                        }
+                                    ],
+                                    "index": 0,
+                                    "name": "Ok"
+                                },
+                                {
+                                    "fields": [
+                                        {
+                                            "type": 5
+                                        }
+                                    ],
+                                    "index": 1,
+                                    "name": "Err"
+                                }
+                            ]
+                        }
+                    },
+                    "params": [
+                        {
+                            "name": "T",
+                            "type": 7
+                        },
+                        {
+                            "name": "E",
+                            "type": 5
+                        }
+                    ],
+                    "path": [
+                        "Result"
+                    ]
+                }
+            },
+            {
+                "id": 7,
+                "type": {
+                    "def": {
+                        "primitive": "bool"
+                    }
+                }
+            },
+            {
+                "id": 8,
+                "type": {
+                    "def": {
+                        "variant": {
+                            "variants": [
+                                {
+                                    "fields": [
+                                        {
                                             "type": 1
                                         }
                                     ],
@@ -697,13 +775,13 @@ export function metadata() {
                 }
             },
             {
-                "id": 7,
+                "id": 9,
                 "type": {
                     "def": {
                         "composite": {
                             "fields": [
                                 {
-                                    "type": 8,
+                                    "type": 10,
                                     "typeName": "[u8; 32]"
                                 }
                             ]
@@ -717,7 +795,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 8,
+                "id": 10,
                 "type": {
                     "def": {
                         "array": {
@@ -728,7 +806,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 9,
+                "id": 11,
                 "type": {
                     "def": {
                         "primitive": "u128"
@@ -736,13 +814,13 @@ export function metadata() {
                 }
             },
             {
-                "id": 10,
+                "id": 12,
                 "type": {
                     "def": {
                         "composite": {
                             "fields": [
                                 {
-                                    "type": 8,
+                                    "type": 10,
                                     "typeName": "[u8; 32]"
                                 }
                             ]
@@ -756,7 +834,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 11,
+                "id": 13,
                 "type": {
                     "def": {
                         "primitive": "u64"
@@ -764,7 +842,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 12,
+                "id": 14,
                 "type": {
                     "def": {
                         "primitive": "u32"
@@ -772,7 +850,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 13,
+                "id": 15,
                 "type": {
                     "def": {
                         "variant": {}

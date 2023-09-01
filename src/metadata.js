@@ -1,3 +1,5 @@
+// Copyright (c) 2023 Algorealm, Inc.
+
 export function metadata() {
     return {
         "source": {

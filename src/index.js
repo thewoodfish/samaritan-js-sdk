@@ -1,3 +1,5 @@
+// Copyright (c) 2023 Algorealm, Inc.
+
 // imports
 import WebSocket from 'ws';
 import { blake2AsHex } from '@polkadot/util-crypto';
@@ -8,10 +10,22 @@ import { mnemonicGenerate, cryptoWaitReady, blake2AsHex } from '@polkadot/util-c
 const { Keyring } = require('@polkadot/keyring');
 import { ContractPromise } from '@polkadot/api-contract';
 
-const SAM_DB_LISTENING_PORT = 2027;
+// blockchain config
+const wsProvider = new WsProvider('wss://rococo-contracts-rpc.polkadot.io');
+const node = await ApiPromise.create({ provider: wsProvider });
+const keyring = new Keyring({ type: 'sr25519' });
 
 // local imports
 import * as chain from "./contract.cjs";
+import * as meta from "./metadata.js";
+
+// constants
+const SAM_DB_LISTENING_PORT = 2027;
+const CONTRACT_ADDRESS = "5Gn7GYEeQMiCDXg8QrGUFrYSL4pENGkEpZmpMm4AB9ZHzaNA";
+// contains no balance, only used to read state of contract
+const MNEMONICS = "dilemma quarter decrease simple climb boring liberty tobacco upper axis neutral suit";
+const SamOS = keyring.createFromUri(MNEMONICS, 'sr25519');
+const contract = new ContractPromise(api, meta.metadata(), CONTRACT_ADDRESS);
 
 async function sendMessage(ws, message) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -36,29 +50,35 @@ const
     api = {
         connect: async (did) => {
             // we need to get the address of the nodes running the application
-            let nodeAddresses = await chain.getSubscribedNodes();
+            let nodeAddresses = await chain.getSubscribedNodes(node, contract, SamOS, did);
+            console.log(nodeAddresses);
 
             // select randomly and try to connect, else pick another
             let wsAddress = extractAndSelectRandomIp(nodeAddresses);
-            // then concatenate it with SamaritanDB default listening port
-            wsAddress += `${SAM_DB_LISTENING_PORT}`;
-            console.log(wsAddress);
 
-            try {
-                const ws = new WebSocket(wsAddress);
+            if (wsAddress) {
+                // then concatenate it with SamaritanDB default listening port
+                wsAddress += `${SAM_DB_LISTENING_PORT}`;
+                console.log(`Selected node "wsAddress" from contract`);
 
-                ws.addEventListener('error', (error) => {
-                    console.error('WebSocket connection error:', error);
-                });
+                try {
+                    const ws = new WebSocket(wsAddress);
 
-                ws.addEventListener('open', () => {
-                    console.log('WebSocket connection established');
-                });
+                    ws.addEventListener('error', (error) => {
+                        console.error('WebSocket connection error:', error);
+                    });
 
-                return ws; // Return the WebSocket instance for further use
-            } catch (error) {
-                console.error('WebSocket initialization error:', error);
-                throw error; // Rethrow the error to handle it at a higher level
+                    ws.addEventListener('open', () => {
+                        console.log('WebSocket connection established');
+                    });
+
+                    return ws; // Return the WebSocket instance for further use
+                } catch (error) {
+                    console.error('WebSocket initialization error:', error);
+                    throw error; // Rethrow the error to handle it at a higher level
+                }
+            } else {
+                console.log(`Failed to find nodes that support application with DID: ${did}`);
             }
         },
 

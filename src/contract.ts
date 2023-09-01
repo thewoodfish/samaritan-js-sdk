@@ -1,3 +1,5 @@
+// Copyright (c) 2023 Algorealm, Inc.
+
 import { BN, BN_ONE, BN_TWO } from "@polkadot/util";
 import type { WeightV2 } from '@polkadot/types/interfaces'
 

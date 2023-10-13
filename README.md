@@ -1,3 +1,3 @@
-# SamaritanOS Javascript Library
+# SamaritanDB Javascript Library
 
-This JS library helps web applications interface or communicate with SamaritanOS. 
+This simple JS library helps web applications interface or communicate with SamaritanDB. 
